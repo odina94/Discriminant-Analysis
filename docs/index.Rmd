@@ -1,0 +1,523 @@
+---
+title: "Discriminant Analysis"
+author: 'Odinakachukwu Okechukwu Egwuekwe'
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Include relevant packages here. You may add any extra ones you need.
+require(tidyverse)
+require(GGally)
+require(corrplot)
+require(kableExtra)
+require(dplyr)
+require(bartMachine)
+```
+
+
+
+## Question (a) - Technical report
+
+Objective:
+To determine what factors influence whether a person has heart disease or not. The dataset contains 5420 obervations with 10 variables(6 Categorical and 4 Numeric Variables). An exploratory analysis of the dataset is performed to give a detailed overview.
+
+```{r, include = FALSE}
+# Load in the data set. 
+
+HDD<-read.csv("HeartDiseaseData.csv")
+
+```
+
+```{r, include=FALSE}
+#have a quick look at the data
+head(HDD)
+
+summary(HDD)
+
+dim(HDD)
+
+```
+
+```{r}
+HDD %>%
+  count(HeartDisease) %>%
+  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
+  kable() %>%
+  kable_styling()
+
+HDD %>%
+  count(Smoking) %>%
+  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
+  kable() %>%
+  kable_styling()
+
+HDD %>%
+  count(AlcoholDrinking) %>%
+  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
+  kable() %>%
+  kable_styling()
+
+
+HDD %>%
+  count(Stroke) %>%
+  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
+  kable() %>%
+  kable_styling()
+
+HDD %>%
+  count(Sex) %>%
+  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
+  kable() %>%
+  kable_styling()
+
+HDD %>%
+  count(AgeCategory) %>%
+  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
+  kable() %>%
+  kable_styling()
+```
+
+
+## Exploratory analysis
+```{r,include=FALSE}
+# Define the variables of interest
+variables <- c("HeartDisease", "Smoking", "AlcoholDrinking", "Stroke", "Sex", "AgeCategory")
+
+# Loop through the variables
+for (i in variables) {
+  # Count the occurrences of each unique value in the column 'i' of the 'HDD' dataset
+  freq_table <- HDD %>%
+    count(!!sym(i)) %>%
+    # Calculate proportions and percentages
+    mutate(prop = round(prop.table(n), 3), pct = round(prop.table(n), 3) * 100) %>%
+    # Convert the table to a nicely formatted table using kable
+    kable() %>%
+    # Apply styling to the table using kable_styling
+    kable_styling()
+    
+    
+  
+  # Print the frequency table for the current variable
+  print(freq_table)
+}
+
+```
+
+- The proportion of Respondents who have smoked at least 100 cigarettes(0.534) is 
+slightly greater than Respondents who have not.
+
+- Non-Heavy drinkers account for 95%  Respondents.
+
+- 87.5% of Respondents had a stroke history and 12.5% reported not having stroke.
+
+- 55% of respondents are Males while 45% are Females
+
+- Majority of Respondents are 60 years and above
+
+
+## Boxplots
+```{r,echo=FALSE}
+
+ggplot(data=HDD, aes(x = HeartDisease, y = BMI)) + geom_boxplot() + theme_bw()+ggtitle('BMI')
+ggplot(data=HDD, aes(x = HeartDisease, y = SleepTime)) + geom_boxplot() + theme_bw()+ggtitle('Sleeptime')
+ggplot(data=HDD, aes(x = HeartDisease, y = PhysicalHealth)) + geom_boxplot() + theme_bw()+ggtitle('PhysicalHealth')
+ggplot(data=HDD, aes(x = HeartDisease, y = MentalHealth)) + geom_boxplot() + theme_bw()+ggtitle('MentalHealth')
+
+```
+
+
+## Summary Statistics for Numerical Variables(BMI,Sleep time, Mental Health, Physical Health) by Heart Disease group
+```{r,echo=FALSE}
+
+
+# BMI
+HDD %>%
+  group_by(HeartDisease) %>%
+  summarise(min=min(BMI), max=max(BMI), Q1=quantile(BMI, 0.25), median=median(BMI), Q3=quantile(BMI,0.75), mean=mean(BMI),sd=sd(BMI)) %>% 
+  kable()%>%
+  kable_styling()%>%
+  add_header_above(c("BMI Summary by Heart Disease Status" = 8))
+
+
+#Sleep Time
+HDD %>%
+  group_by(HeartDisease) %>%
+  summarise(min=min(SleepTime), max=max(SleepTime), Q1=quantile(SleepTime, 0.25), median=median(SleepTime), Q3=quantile(SleepTime,0.75), mean=mean(SleepTime),sd=sd(SleepTime)) %>% 
+  kable()%>%
+  kable_styling()%>%
+  add_header_above(c("SleepTime Summary by Heart Disease Status" = 8))
+
+
+#Mental Health
+HDD %>%
+  group_by(HeartDisease) %>%
+  summarise(min=min(MentalHealth), max=max(MentalHealth), Q1=quantile(MentalHealth, 0.25), median=median(MentalHealth), Q3=quantile(MentalHealth,0.75), mean=mean(MentalHealth),sd=sd(MentalHealth)) %>% 
+  kable()%>%
+  kable_styling()%>%
+  add_header_above(c("Mental Health Summary by Heart Disease Status" = 8))
+
+
+#Physical Health
+HDD %>%
+  group_by(HeartDisease) %>%
+  summarise(min=min(PhysicalHealth), max=max(PhysicalHealth), Q1=quantile(PhysicalHealth, 0.25), median=median(PhysicalHealth), Q3=quantile(PhysicalHealth,0.75), mean=mean(PhysicalHealth),sd=sd(PhysicalHealth)) %>% 
+  kable()%>%
+  kable_styling()%>%
+  add_header_above(c("Physical Health Summary by Heart Disease Status" = 8))
+
+
+
+```
+- The  Respondents who have had Heart Disease have on average a higher BMI value compared to those who don't have a heart disease history.
+
+- The  Respondents who have had Heart Disease have on average higher sick-days(Physically) compared to those who don't have a heart disease history.
+
+- The  Respondents who have had Heart Disease have on average slightly higher sick-days(Mentally) compared to those who don't have a heart disease history.
+
+- The  Respondents who have had Heart Disease have on average equal hours of sleep time compared to those who don't have a heart disease history.
+
+
+## Overall Summary for Numerical variables 
+```{r,echo=FALSE}
+df <- as_tibble(HDD[,c(2,6,7,10)])
+df.sum <- df %>%
+  summarise(across(where(is.numeric),list(min = ~min(.), 
+                      q25 = ~quantile(., 0.25), 
+                      median = ~median(.), 
+                      q75 = ~quantile(., 0.75), 
+                      max = ~max(.),
+                      mean = ~mean(.), 
+                      sd = ~sd(.))))
+
+
+# reshape the output for presentation in a table
+df.sum %>% gather(stat, val) %>%
+  separate(stat, into = c("var", "stat"), sep = "_") %>%
+  spread(stat, val) %>%
+  select(var, min, q25, median, q75, max, mean, sd) %>%
+  kable() %>%
+  kable_styling()
+```
+The data were measured on different scales and it can be seen that there is high variability across the numerical groups, the data has to be standardized.
+
+## Standardisation
+```{r,echo=FALSE}
+StDev = apply(HDD[,c(2,6,7,10)], 2, sd)
+
+Hdd = sweep(HDD[,c(2,6,7,10)], 2, StDev, "/")
+```
+
+```{r,echo=FALSE}
+
+df <- as_tibble(Hdd)
+df.sum <- df %>%
+  summarise(across(where(is.numeric),list(min = ~min(.), 
+                      q25 = ~quantile(., 0.25), 
+                      median = ~median(.), 
+                      q75 = ~quantile(., 0.75), 
+                      max = ~max(.),
+                      mean = ~mean(.), 
+                      sd = ~sd(.))))
+
+
+# reshape the output for presentation in a table
+df.sum %>% gather(stat, val) %>%
+  separate(stat, into = c("var", "stat"), sep = "_") %>%
+  spread(stat, val) %>%
+  select(var, min, q25, median, q75, max, mean, sd) %>%
+  kable() %>%
+  kable_styling()
+
+```
+As seen above the Data has been standardized with a standard deviation of 1 across the variables.
+
+
+## Pairs plot to assess if any relationships exist between the $X_j$s and a correlation matrix to calculate the correlation coefficients between pairs of $X_j$s:
+  
+```{r,echo=FALSE}
+
+ggpairs(data = Hdd, upper = list(continuous = "blank", discrete = "blank"), lower=list(continuous = "points", discrete="blank"), diag = list(continuous = "densityDiag", discrete="blankDiag"), ggplot2::aes(colour=HDD$HeartDisease)) + theme_bw()
+
+
+cor(Hdd)
+
+```
+
+-The following Deductions were made from the exploratory analysis
+
+
+- The proportion of Respondents that have ever reported having coronary heart disease(CHD) or myocardial infection (MI) =(0.723) is approximately three times the proportion of Respondents without Heart Disease History(0.277)
+
+- The box plots for "Sleep Time" and BMI are reasonably symmetric in contrast to the box-plots for Mental Health and Physical Activity which is heavily skewed with extreme outliers. From the data it could be related to the heavy presence(Mode) of 0 in both variables.
+
+
+- The BMI variable appears to have the most significant discrepancy between the medians of both groups(i.e.,=1.64), and respondents with a heart disease history have a higher median value of 28.27 compared to Respondents without heart disease=26.63. As a result, the BMI variable could be a useful predictor. 
+
+- There is minimal correlation between "Sleep time" and other variables and close to a moderate correlation between "Mental Health" and "Physical Health" r=0.34
+
+- Overall, there is  a close to moderate presence of outliers in the dataset.
+
+
+
+
+## Formal analysis
+## LOGISTIC REGRESSION
+With G=2, large 'n', and uncorrelated Variables and relaxing the assumptions of Multivariate Normality, We employ Logistic Regression to classify the respondents.
+```{r,echo=FALSE}
+# Recoding the categorical Variables
+
+Hdd$AgeCategory.f<-as.factor(HDD$AgeCategory)
+Hdd$HeartDisease.f<- as.factor(HDD$HeartDisease)
+Hdd$Smoking.f<-as.factor(HDD$Smoking)
+Hdd$AlcoholDrinking.f<-as.factor(HDD$AlcoholDrinking)
+Hdd$Stroke.f<-as.factor(HDD$Stroke)
+Hdd$Sex.f<-as.factor(HDD$Sex)
+```
+
+#fitting the Logistic Model using the uncorrelated variables
+```{r}
+
+glm.fit = glm(HeartDisease.f~BMI+Smoking.f+AlcoholDrinking.f+Stroke.f+PhysicalHealth+MentalHealth+Sex.f+AgeCategory.f+SleepTime, data=Hdd, family="binomial")
+
+summary(glm.fit)
+
+```
+The $X_J$s are significant in the model as the P-values are very small giving indication that these variables may be useful for discriminating between the groups and are strongly associated with the probability of having a Heart Disease.
+
+-The following can be concluded from the logistic coefficients
+
+- BMI= 0.2929: An increase in BMI , Increases the chances of having a heart attack.Respondents with High BMI are more susceptible to Heart attacks
+
+- Smoking.fYes= 0.542514: Respondents that have smoked at least 100 cigarettes are more likely to have a heart Disease  compared to non-smokers.
+
+- AlcoholDrinking.fYes= -0.492916: Respondents who are Heavy Alcohol drinkers are less likely to have a Heart disease compared to non-heavy drinkers.
+
+- Stroke.fYes= 1.696171: Respondents with stroke history are more likely to have a heart Disease than Respondents without stroke history.
+
+- PhysicalHealth= 0.38466: An increase in the number of Sick-Days(Mentally) over a 30 day period,results in a  high probability of having a heart Disease. Therefore, Respondents who have frequently suffered from mental related illness over a  30 day period are more likely to have a Heart Disease.
+
+- MentalHealth= 0.13217:An increase in the number of Sick-Days(Mentally) over a 30 day period,results in a  high probability of having a heart Disease.Therefore, Respondents who have frequently suffered from mental related illness over a  30 day period are more likely to have a Heart Disease.
+
+- Sex.fMale= 0.64103: Men are more likely to have a Heart Disease compared to women.
+
+- SleepTime= -0.09582: Respondents that Sleep more on average are less likely to have a Heart Condition.
+
+- Older Respondents(40  and above) are most likely to have a Heart disease compared to other age groups.The Chances of having a heart Disease increases with age with respondents aged 70 and above at high risk of having heart disease.
+
+## Odds Ratio
+```{r, echo=FALSE}
+# Odds ratios
+round(exp(coef(glm.fit)),3)
+
+# Odds ratio and 95% CI
+round(exp(cbind(OR = coef(glm.fit), confint(glm.fit))),3)
+
+```
+
+-Odds Interpretation
+
+- BMI= 1.340: Increasing BMI by 1 unit increases the risk of having a Heart Disease by 1.34 controlling for the effect of other variables
+
+- Smoking.fyes=1.720: The odds of a Respondent who has smoked at least  100 cigarettes having a Heart Disease is 1.720 times the odds of a non- smoking  respondent having a heart disease.
+
+- AlcoholDrinking.fYes=0.611: The odds of a Female and Male Respondent who drinks  at least 7 and 14  bottles of beer/week respectively having a Heart Disease is 0.611 times the odds of a non- drinking respondent having a heart disease.
+
+- Stroke.fYes=5.453: The odds of a Respondent with a stroke history having a heart disease is 5.453 times the odds of a respondent without a stroke history having a heart disease.
+
+- PhysicalHealth= 1.469:A respondent being Physically ill for more than a day over a 30 day period increases the risk of having a Heart Disease by 1.469 controlling for the effect of other variables
+
+- MentalHealth= 1.141:A respondent being Mentally ill for more than a day over a 30 day period increases the risk of having a Heart Disease by 1.141 controlling for the effect of other variables
+
+- Sex.fMale=1.898: The odds of a man having a heart Disease is 1.898 times the odds of a woman having a Heart disease.
+
+- SleepTime=0.909: Increasing the average amount of sleep a respondent gets reduces the risk of having a heart attack by 0.909 controlling for the effect of other variables. 
+
+- AgeCategory.f80 or older=67.052: the odds of a respondent who is 80 years or older having a  Heart Disease complication is 67.052 times the odds of a respondent between ages 18-24 having a heart disease.
+
+
+## Predicted probabilities
+These values correspond the the probability of a respondent having heart Disease or not
+
+```{r,echo=FALSE}
+
+pred.probs = predict(glm.fit, type = "response")
+
+contrasts(Hdd$HeartDisease.f)
+```
+-The closer the probability of belonging to a class is to 1, the higher the probability of belonging to class one. since Yes is coded as 1(class 1), this means that the the closer the probability of having  heart disease is to 1, the higher the probability of being in that class. 
+
+A threshold of 0.5 is used to classify Respondents such that if the predicted probability of having heart disease is greater than 0.5, then the respondent is classified as having a Heart Disease
+```{r}
+
+pred.class = ifelse(pred.probs > 0.5, "Yes", "No")
+
+```
+
+## Classification performance
+
+Creating a confusion matrix (i.e. a cross-tabulation) of these predictions versus the ```HeartDisease``` variable to identify how many observations were correctly or incorrectly classified. 
+```{r}
+table(pred.class, HDD$HeartDisease)
+prop.table(table(pred.class, Hdd$HeartDisease.f),1)
+
+``` 
+
+```{r,echo=FALSE}
+#classification Rate
+glm.No<-708/(708+235)
+glm.Yes<-3682/(3682+795)
+
+print(paste("Classification Rate:",round(mean(pred.class == Hdd$HeartDisease.f),4)))
+print(paste('classification perfomance for  Class(NO)' , glm.No))
+print(paste('classification perfomance for  Class(YES)' , glm.Yes))
+
+```
+81% of Respondents were correctly classified as either  having a Heart Disease or not. Hence the Logistic Regression is performing better than Random guessing. The high classification rate can be as a result of training and testing the model on the same data . To validate the results,the data is split into training and test set. Furthermore, the train set will be used to train and fit the model and the fitted model will be used to classify the Respondents in the Test Set.
+
+# Splitting the data into training and test set at 70:30 ratio respectively and re-fitting the logistic regression model to the training dataset.
+```{r, echo=FALSE}
+# Create the training and test datasets
+
+# for reproducibility of results
+set.seed (2)
+
+# creating training set Index to Sample
+trainIndex <- sample (1: nrow (Hdd), 3800) 
+
+train<-Hdd[trainIndex,]
+test <- Hdd[-trainIndex, ] 
+
+print(paste('Dimension for training data=' , dim(train)))
+print(paste('Dimension for training data=' , dim(test)))
+
+
+# Create the outcome vector for the test data
+HeartDisease.test <- Hdd$HeartDisease.f[-trainIndex] 
+
+```
+
+
+```{r}
+glm.fit.train = glm(HeartDisease.f~BMI+Smoking.f+AlcoholDrinking.f+Stroke.f+PhysicalHealth+MentalHealth+Sex.f+AgeCategory.f+SleepTime,family="binomial",data=Hdd,subset=trainIndex)
+summary(glm.fit.train)
+
+```
+As before the significant values remained the same showing that the predictor variables are helpful in discriminating between the two groups.
+
+# Classification Performance
+```{r,echo=FALSE}
+
+glm.probs.test = predict(glm.fit.train, test, type="response")
+pred.class.test = ifelse(glm.probs.test> 0.5, "Yes", "No")
+table(pred.class.test, HeartDisease.test)
+
+
+```
+
+# Classification Rate
+```{r,echo=FALSE}
+print(paste("Classification Rate:", mean(pred.class.test == HeartDisease.test)))
+
+glm1.No=209/(209+78)
+glm1.Yes=1076/(1076+257)
+print(paste('classification perfomance for  Class(NO)' , glm1.No))
+print(paste('classification perfomance for  Class(YES)' , glm1.Yes))
+
+```
+
+- 79% of Respondents were correctly classified and the training error is 21%.
+
+- 73% of Respondents were correctly classified as not having a Heart Disease.
+
+- 81% of Respondents were correctly classified as having had heart disease related complications.
+
+This suggests that the logistic regression did better in classifying individuals with heart diseasebased on Unseen Data.
+Overall, the logistic regression performed better than random guessing.
+
+## DECISION TREE APPROACH: 
+- Bayesian Additive Regression Trees(BART) Classification.
+
+The Results obtained from the logistic classifier is compared to the BART classification.
+```{r}
+# Load the necessary packages
+
+Sys.setenv(JAVA_OPTS = "-Xmx8g")
+
+# specifying columns for the analysis
+bart.train.data<-train[,c(1,2,3,4,5,7,8,9,10)]
+bart.test.data<-test[,c(1,2,3,4,5,7,8,9,10)]
+#the BART model
+bart_model <- bartMachine( bart.train.data, y = train$HeartDisease.f,
+                          num_trees = 100, num_burn_in = 250 , num_iterations_after_burn_in = 1000,print_tree_illustrations = FALSE,verbose = TRUE,seed= 34)
+```
+
+
+
+# Prediction
+```{r,echo=FALSE}
+# Predict on the test data
+bart_pred_class <- predict(bart_model, bart.test.data,type='class')
+bart_pred_prob<- predict(bart_model, bart.test.data,type='prob')
+
+
+```
+
+# Classification Performance
+```{r,echo=FALSE}
+
+table(bart_pred_class, HeartDisease.test)
+
+```
+
+```{r,echo=FALSE}
+perf.no<-round(217/(217+85),3)
+perf.yes<-round(1069/(249+1069),3)
+
+
+print(paste("Classification rate for the Bart Classifier=", round(mean(bart_pred_class==HeartDisease.test),4)))
+print(paste('BART classification perfomance for  Class(NO)=' , perf.no))
+print(paste('BART classification perfomance for  Class(YES)=' , perf.yes))
+```
+
+-Using the BART classifier: 
+
+- 79% of Respondents were correctly classified and the training error is 21%.
+
+- 73% of Respondents were correctly classified as not having a Heart Disease.
+
+- 81% of Respondents were correctly classified as having had heart disease related complications.
+
+
+
+## Conclusions
+
+- BMI, smoking, Alcohol drinking, stroke, Physical health, mental health, sex, age category and sleep time influence having a Heart Disease or not.
+
+- There is no overall significant difference in the classification performance of the BART classifier and logistic classifier with both classification methods having a similar classification rate of 79%.
+
+- Both classifiers have the same classification performance in both groups as both correctly classified approximately 72% of respondents having no heart  disease history and 82% of respondents having Disease Related complications. 
+
+- Although the Bart classifier returns optimal results for most classification problems, we can accept and use the results from the  logistic regression on the basis of computation time and less complexity.
+
+
+
+
+## Question (b) - Non-technical report
+According to the Center for Disease Control (CDC), Heart disease is one of the top causes of death for African Americans, American Indians and Alaska Natives, and white people, and about half of all Americans, or 47%, have at least one of the three main risk factors for heart disease: high blood pressure, high cholesterol, and smoking as well as other notable factors. As part of the Behavioural Risk Factor Surveillance System (BRFSS), The CDC surveyed 5420 respondents. The following variables were measured heart disease, BMI, smoking, Alcohol drinking, stroke, Physical health, mental health, sex, age category, and sleep time. To assist the healthcare providers in controlling these risk factors, this analysis aims to identify which variables measured can help distinguish individuals with and without heart disease complications. In other words, the variables that influence heart disease or not.
+An initial check and summary of the dataset showed no missing observations or multicollinearity but a moderate presence of outlying values. Further probe into the dataset showed that 75 percent of the Respondents have a  Heart Disease history. Additionally, slightly more respondents reported smoking at least 100 cigarettes than those who didn’t. Most respondents were non-heavy drinkers, and most had a history of stroke. The survey had a slightly higher percentage of male respondents than female respondents, and most respondents were 60 or above. In general, Respondents who have ever had a heart condition have a significantly higher BMI value and a higher number of physically and mentally related sick-days over 30 days.
+
+Further analysis using the logistic regression showed that all predictive variables(i.e., BMI, smoking, Alcohol drinking, stroke, Physical health, mental health, sex, age category, and sleep-time) help distinguish respondents between having a Heart Disease and  81 percent of respondents were correctly classified as either having heart disease or not. The results showed that the following categories: older respondents(40 years and above), male respondents, respondents with stroke history, smokers, respondents with high BMI and sick days, respectively, stand a high chance of having heart disease, while heavy drinkers and respondents stand a lower chance of having heart disease. Additionally, respondents from age category of  70 and above are at high risk of having Heart Disease as their P-values are smallest among other significant age groups. Further validation of the results from the logistic regression by building the logistic model on 70% of the respondents and testing on the remaining 30% showed that 79% of the Respondents were correctly classified in either group (73% of Respondents were correctly classified as not having a Heart Disease and 81% of Respondents were correctly classified as having had heart disease-related complications) which almost agrees with the initial accuracy score of 81% obtained.Hence,the  Logistic regression performed well on unseen data.
+
+The second part of the analysis focused on using the Bayesian Additive Regression Trees (BART), an optimum type of Decision tree classification, to validate the results of the Logistic Regression. One area for improvement of the researcher on the BART classifier is reporting the significant variables from the classification, which discriminates between the two groups. Using the important variables from the logistic classification to build the  Bart model on 70% of the respondents and testing the built Bart model on the remaining 30%, the BART classification performed similarly to the logistic regression by correctly classifying 79% of the Respondents as either having heart disease or not (73% of Respondents were correctly classified as not having a Heart Disease and 81% of Respondents were correctly classified as having had heart disease-related complications). This confirms the validity of the results obtained from the logistic classifier.  Therefore, we can use logistic regression as a reliable method for predicting the likelihood of heart disease and conclude that  BMI, smoking, Alcohol drinking, stroke, Physical health, mental health, sex, age category, and sleep time help predict the likelihood of Heart Disease.
+
+
+
+
+
+

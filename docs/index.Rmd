@@ -22,7 +22,7 @@ require(bartMachine)
 
 
 
-## Question (a) - Technical report
+## Part (a) Technical Report
 
 Objective:
 To determine what factors influence whether a person has heart disease or not. The dataset contains 5420 obervations with 10 variables(6 Categorical and 4 Numeric Variables). An exploratory analysis of the dataset is performed to give a detailed overview.
@@ -508,7 +508,7 @@ print(paste('BART classification perfomance for  Class(YES)=' , perf.yes))
 
 
 
-## Question (b) - Non-technical report
+## Part  (b) - Non-technical report
 According to the Center for Disease Control (CDC), Heart disease is one of the top causes of death for African Americans, American Indians and Alaska Natives, and white people, and about half of all Americans, or 47%, have at least one of the three main risk factors for heart disease: high blood pressure, high cholesterol, and smoking as well as other notable factors. As part of the Behavioural Risk Factor Surveillance System (BRFSS), The CDC surveyed 5420 respondents. The following variables were measured heart disease, BMI, smoking, Alcohol drinking, stroke, Physical health, mental health, sex, age category, and sleep time. To assist the healthcare providers in controlling these risk factors, this analysis aims to identify which variables measured can help distinguish individuals with and without heart disease complications. In other words, the variables that influence heart disease or not.
 An initial check and summary of the dataset showed no missing observations or multicollinearity but a moderate presence of outlying values. Further probe into the dataset showed that 75 percent of the Respondents have a  Heart Disease history. Additionally, slightly more respondents reported smoking at least 100 cigarettes than those who didn’t. Most respondents were non-heavy drinkers, and most had a history of stroke. The survey had a slightly higher percentage of male respondents than female respondents, and most respondents were 60 or above. In general, Respondents who have ever had a heart condition have a significantly higher BMI value and a higher number of physically and mentally related sick-days over 30 days.
 

@@ -44,68 +44,26 @@ dim(HDD)
 
 ```
 
-```{r}
-HDD %>%
-  count(HeartDisease) %>%
-  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
-  kable() %>%
-  kable_styling()
-
-HDD %>%
-  count(Smoking) %>%
-  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
-  kable() %>%
-  kable_styling()
-
-HDD %>%
-  count(AlcoholDrinking) %>%
-  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
-  kable() %>%
-  kable_styling()
-
-
-HDD %>%
-  count(Stroke) %>%
-  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
-  kable() %>%
-  kable_styling()
-
-HDD %>%
-  count(Sex) %>%
-  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
-  kable() %>%
-  kable_styling()
-
-HDD %>%
-  count(AgeCategory) %>%
-  mutate(prop=round(prop.table(n),3), pct=round(prop.table(n),3)*100) %>%
-  kable() %>%
-  kable_styling()
-```
-
-
 ## Exploratory analysis
-```{r,include=FALSE}
-# Define the variables of interest
-variables <- c("HeartDisease", "Smoking", "AlcoholDrinking", "Stroke", "Sex", "AgeCategory")
+# Summary Table for the Categorical Variables
+```{r, echo=FALSE}
 
-# Loop through the variables
-for (i in variables) {
-  # Count the occurrences of each unique value in the column 'i' of the 'HDD' dataset
-  freq_table <- HDD %>%
-    count(!!sym(i)) %>%
-    # Calculate proportions and percentages
-    mutate(prop = round(prop.table(n), 3), pct = round(prop.table(n), 3) * 100) %>%
-    # Convert the table to a nicely formatted table using kable
+summary_table <- function(variable) {
+  HDD %>%
+    count({{variable}}) %>%
+    mutate(prop = round(prop.table(n), 3),
+           pct = prop * 100) %>%
     kable() %>%
-    # Apply styling to the table using kable_styling
     kable_styling()
-    
-    
-  
-  # Print the frequency table for the current variable
-  print(freq_table)
 }
+
+summary_table(HeartDisease)
+summary_table(Smoking)
+summary_table(AlcoholDrinking)
+summary_table(Stroke)
+summary_table(Sex)
+summary_table(AgeCategory)
+
 
 ```
 
@@ -124,10 +82,18 @@ slightly greater than Respondents who have not.
 ## Boxplots
 ```{r,echo=FALSE}
 
-ggplot(data=HDD, aes(x = HeartDisease, y = BMI)) + geom_boxplot() + theme_bw()+ggtitle('BMI')
-ggplot(data=HDD, aes(x = HeartDisease, y = SleepTime)) + geom_boxplot() + theme_bw()+ggtitle('Sleeptime')
-ggplot(data=HDD, aes(x = HeartDisease, y = PhysicalHealth)) + geom_boxplot() + theme_bw()+ggtitle('PhysicalHealth')
-ggplot(data=HDD, aes(x = HeartDisease, y = MentalHealth)) + geom_boxplot() + theme_bw()+ggtitle('MentalHealth')
+plot_boxplot <- function(data, y_var, title) {
+  ggplot(data, aes(x = HeartDisease, y = {{y_var}})) +
+    geom_boxplot() +
+    theme_bw() +
+    ggtitle(title)
+}
+
+plot_boxplot(HDD, BMI, 'BMI')
+plot_boxplot(HDD, SleepTime, 'Sleeptime')
+plot_boxplot(HDD, PhysicalHealth, 'PhysicalHealth')
+plot_boxplot(HDD, MentalHealth, 'MentalHealth')
+
 
 ```
 
@@ -135,41 +101,39 @@ ggplot(data=HDD, aes(x = HeartDisease, y = MentalHealth)) + geom_boxplot() + the
 ## Summary Statistics for Numerical Variables(BMI,Sleep time, Mental Health, Physical Health) by Heart Disease group
 ```{r,echo=FALSE}
 
+library(dplyr)
+library(kableExtra)
 
-# BMI
-HDD %>%
-  group_by(HeartDisease) %>%
-  summarise(min=min(BMI), max=max(BMI), Q1=quantile(BMI, 0.25), median=median(BMI), Q3=quantile(BMI,0.75), mean=mean(BMI),sd=sd(BMI)) %>% 
-  kable()%>%
-  kable_styling()%>%
-  add_header_above(c("BMI Summary by Heart Disease Status" = 8))
+# Function to generate summary
+generate_summary <- function(data, variable, header) {
+  data %>%
+    group_by(HeartDisease) %>%
+    summarise(
+      min = min(.data[[variable]]),
+      max = max(.data[[variable]]),
+      Q1 = quantile(.data[[variable]], 0.25),
+      median = median(.data[[variable]]),
+      Q3 = quantile(.data[[variable]], 0.75),
+      mean = mean(.data[[variable]]),
+      sd = sd(.data[[variable]])
+    ) %>%
+    kable() %>%
+    kable_styling() %>%
+    add_header_above(header, escape = FALSE)
+}
 
+# BMI Summary
+generate_summary(HDD, "BMI", list("BMI Summary by Heart Disease Status" = 8))
 
-#Sleep Time
-HDD %>%
-  group_by(HeartDisease) %>%
-  summarise(min=min(SleepTime), max=max(SleepTime), Q1=quantile(SleepTime, 0.25), median=median(SleepTime), Q3=quantile(SleepTime,0.75), mean=mean(SleepTime),sd=sd(SleepTime)) %>% 
-  kable()%>%
-  kable_styling()%>%
-  add_header_above(c("SleepTime Summary by Heart Disease Status" = 8))
+# Sleep Time Summary
+generate_summary(HDD, "SleepTime", list("SleepTime Summary by Heart Disease Status" = 8))
 
+# Mental Health Summary
+generate_summary(HDD, "MentalHealth", list("Mental Health Summary by Heart Disease Status" = 8))
 
-#Mental Health
-HDD %>%
-  group_by(HeartDisease) %>%
-  summarise(min=min(MentalHealth), max=max(MentalHealth), Q1=quantile(MentalHealth, 0.25), median=median(MentalHealth), Q3=quantile(MentalHealth,0.75), mean=mean(MentalHealth),sd=sd(MentalHealth)) %>% 
-  kable()%>%
-  kable_styling()%>%
-  add_header_above(c("Mental Health Summary by Heart Disease Status" = 8))
+# Physical Health Summary
+generate_summary(HDD, "PhysicalHealth", list("Physical Health Summary by Heart Disease Status" = 8))
 
-
-#Physical Health
-HDD %>%
-  group_by(HeartDisease) %>%
-  summarise(min=min(PhysicalHealth), max=max(PhysicalHealth), Q1=quantile(PhysicalHealth, 0.25), median=median(PhysicalHealth), Q3=quantile(PhysicalHealth,0.75), mean=mean(PhysicalHealth),sd=sd(PhysicalHealth)) %>% 
-  kable()%>%
-  kable_styling()%>%
-  add_header_above(c("Physical Health Summary by Heart Disease Status" = 8))
 
 
 
